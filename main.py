@@ -2,6 +2,9 @@ from fastapi import FastAPI, status, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from random import randrange
+import psycopg2 
+from psycopg2.extras import RealDictCursor
+import time
 
 app = FastAPI()
 
@@ -10,6 +13,19 @@ class Post(BaseModel):
     content: str
     rating: Optional[int] = None
     published:bool = True
+
+# connection to database should be in try/except 
+while True:
+    try :
+        conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', password='Es3131381', cursor_factory=RealDictCursor)
+        # 'curser_factory=RealDictCursor' helps us to understand that witch 'data' maps to what 'column'
+        cursor = conn.cursor()
+        print("connection to database was seccesfull")
+        break
+    except Exception as error:
+        print("connection to database failed!")
+        print("Error: ",error)
+        time.sleep(2)
 
 my_posts = [{"title":"the title of post 1","content":"content of post 1","id": 1},{"title":"the title of post 2","content":"content of post 2","id": 2}]
 
