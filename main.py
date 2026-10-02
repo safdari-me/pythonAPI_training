@@ -1,6 +1,6 @@
 from fastapi import FastAPI, status, HTTPException, Depends
 from typing import List
-import models, schemas
+import models, schemas, utils
 from database import engine, SessionLocal, get_db 
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ def root():
     return {"Message":"Hello world"}
 
 @app.post("/create_post", response_model=schemas.Post, status_code=status.HTTP_201_CREATED)
-def new_post(post:schemas.PostCreate, db: Session = Depends(get_db)):
+def create_post(post:schemas.PostCreate, db: Session = Depends(get_db)):
 
     new_post = models.Post(**post.model_dump()) #برای وارد کردن راحت تر تک تک پارامترهای entity
     db.add(new_post) #this adds the new post to the database
@@ -65,3 +65,22 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
     post_query.update(updated_post.model_dump(), synchronize_session=False)
     db.commit()
     return post_query.first()
+
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserCreate)
+def create_user(user:schemas.UserCreate, db: Session = Depends(get_db)):
+
+    # hash the password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+    new_user = models.User(**user.model_dump()) #برای وارد کردن راحت تر تک تک پارامترهای entity
+    db.add(new_user) #this adds the new user to the database
+    db.commit() #this commits the changes to the database
+    db.refresh(new_user) 
+        
+    return new_user
+
+@app.get("/get_users", response_model=List[schemas.UserOut])
+def getPosts(db: Session = Depends(get_db)):
+ 
+    users = db.query(models.User).all()
+    return users
